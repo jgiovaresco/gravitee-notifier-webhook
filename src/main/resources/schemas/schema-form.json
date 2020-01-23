@@ -1,0 +1,64 @@
+{
+  "type" : "object",
+  "id" : "urn:jsonschema:io:gravitee:notifier:webhook:configuration:WebhookNotifierConfiguration",
+  "properties" : {
+    "method" : {
+      "title": "HTTP Method",
+      "description": "HTTP method to invoke the webhook",
+      "type" : "string",
+      "default": "POST",
+      "enum" : [ "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "CONNECT", "OPTIONS", "TRACE" ]
+    },
+    "url": {
+      "title": "URL",
+      "type" : "string",
+      "description": "URL to invoke the webhook"
+    },
+    "headers" : {
+      "type" : "array",
+      "title": "Request Headers",
+      "items" : {
+        "type" : "object",
+        "id" : "urn:jsonschema:io:gravitee:notifier:webhook:configuration:HttpHeader",
+        "title": "Header",
+        "properties" : {
+          "name" : {
+            "title": "Name",
+            "type" : "string"
+          },
+          "value" : {
+            "title": "Value",
+            "type" : "string"
+          }
+        }
+      },
+      "required": [
+        "name",
+        "value"
+      ]
+    },
+    "body" : {
+      "title": "Request body",
+      "type" : "string",
+      "x-schema-form": {
+        "type": "codemirror",
+        "codemirrorOptions": {
+          "placeholder": "Put request body here",
+          "lineWrapping": true,
+          "lineNumbers": true,
+          "allowDropFileTypes": true,
+          "autoCloseTags": true
+        }
+      }
+    },
+    "useSystemProxy": {
+      "title": "Use system proxy",
+      "description": "Use the system proxy to call the webhook.",
+      "type": "boolean"
+    }
+  },"required": [
+      "url",
+      "method",
+      "headers"
+  ]
+}
