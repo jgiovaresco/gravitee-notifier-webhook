@@ -118,12 +118,15 @@ public class WebhookNotifier extends AbstractConfigurableNotifier<WebhookNotifie
             request.handler(response -> {
                 if (response.statusCode() == HttpStatusCode.OK_200) {
                     response.bodyHandler(buffer -> {
+                        logger.info("Webhook sent!");
                         future.complete(null);
 
                         // Close client
                         client.close();
                     });
                 } else {
+                    logger.error("Unable to send request to webhook at {} / status {} and message {}", configuration.getUrl(),
+                            response.statusCode(), response.statusMessage());
                     future.completeExceptionally(new NotifierException("Unable to send request to '" +
                             configuration.getUrl() + "'. Status code: " + response.statusCode() + ". Message: " +
                             response.statusMessage(), null));
@@ -135,7 +138,9 @@ public class WebhookNotifier extends AbstractConfigurableNotifier<WebhookNotifie
 
             request.exceptionHandler(throwable -> {
                 try {
-                    future.completeExceptionally(throwable);
+                    logger.error("Unable to send request to webhook at " + configuration.getUrl() + " cause " + throwable.getMessage());
+                    future.completeExceptionally(new NotifierException("Unable to send request to '" +
+                            configuration.getUrl(), throwable));
 
                     // Close client
                     client.close();
@@ -157,7 +162,7 @@ public class WebhookNotifier extends AbstractConfigurableNotifier<WebhookNotifie
                 request.end();
             }
         } catch (Exception ex) {
-            logger.error("Unable to send request to webhook at {}" + configuration.getUrl(), ex);
+            logger.error("Unable to send request to webhook at " + configuration.getUrl() + " cause " + ex.getMessage());
             future.completeExceptionally(ex);
         }
 
