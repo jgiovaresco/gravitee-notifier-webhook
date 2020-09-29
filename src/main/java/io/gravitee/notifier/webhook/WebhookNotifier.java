@@ -78,7 +78,9 @@ public class WebhookNotifier extends AbstractConfigurableNotifier<WebhookNotifie
         HttpClientOptions options = new HttpClientOptions();
 
         if (HTTPS_SCHEME.equalsIgnoreCase(target.getScheme())) {
-            options.setSsl(true).setTrustAll(true);
+            options.setSsl(true)
+                    .setTrustAll(true)
+                    .setVerifyHost(false);
         }
 
         options.setMaxPoolSize(1)
