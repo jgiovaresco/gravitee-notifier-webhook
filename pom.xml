@@ -29,7 +29,7 @@
 
     <groupId>io.gravitee.notifier</groupId>
     <artifactId>gravitee-notifier-webhook</artifactId>
-    <version>1.0.4-SNAPSHOT</version>
+    <version>1.0.4</version>
 
     <name>GraviteeSource - Notifier - Webhook</name>
 
