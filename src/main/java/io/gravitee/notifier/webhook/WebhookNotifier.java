@@ -157,8 +157,8 @@ public class WebhookNotifier extends AbstractConfigurableNotifier<WebhookNotifie
 
             if (configuration.getBody() != null && !configuration.getBody().isEmpty()) {
                 String body = templatize(configuration.getBody(), parameters);
-                request.headers().remove(io.vertx.core.http.HttpHeaders.TRANSFER_ENCODING);
-                request.putHeader(HttpHeaders.CONTENT_LENGTH, Integer.toString(body.length()));
+                request.headers().remove(HttpHeaders.TRANSFER_ENCODING);
+                request.headers().remove(HttpHeaders.CONTENT_LENGTH);
                 request.end(Buffer.buffer(body));
             } else {
                 request.end();
