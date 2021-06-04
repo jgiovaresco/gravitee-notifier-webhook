@@ -58,7 +58,6 @@
     }
   },"required": [
       "url",
-      "method",
-      "headers"
+      "method"
   ]
 }
