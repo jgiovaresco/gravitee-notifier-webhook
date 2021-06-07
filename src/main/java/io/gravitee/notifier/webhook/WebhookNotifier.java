@@ -20,7 +20,7 @@ import io.gravitee.notifier.api.AbstractConfigurableNotifier;
 import io.gravitee.notifier.api.Notification;
 import io.gravitee.notifier.api.exception.NotifierException;
 import io.gravitee.notifier.webhook.configuration.WebhookNotifierConfiguration;
-import io.gravitee.notifier.webhook.vertx.VertxCompletableFuture;
+import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.*;
@@ -71,7 +71,7 @@ public class WebhookNotifier extends AbstractConfigurableNotifier<WebhookNotifie
 
     @Override
     protected CompletableFuture<Void> doSend(Notification notification, Map<String, Object> parameters) {
-        CompletableFuture<Void> future = new VertxCompletableFuture<>(Vertx.currentContext());
+        CompletableFuture<Void> future = new CompletableFuture<>();
 
         URI target = URI.create(configuration.getUrl());
 
@@ -111,64 +111,77 @@ public class WebhookNotifier extends AbstractConfigurableNotifier<WebhookNotifie
 
         HttpClient client = Vertx.currentContext().owner().createHttpClient(options);
 
-        try {
-            HttpClientRequest request = client
-                    .request(convert(configuration.getMethod()), target.getPath())
-                    .setFollowRedirects(true)
-                    .setTimeout(httpClientTimeout);
+        RequestOptions requestOpts = new RequestOptions()
+                .setURI(target.getPath())
+                .setMethod(convert(configuration.getMethod()))
+                .setFollowRedirects(true)
+                .setTimeout(httpClientTimeout);
 
-            request.handler(response -> {
-                if (response.statusCode() == HttpStatusCode.OK_200) {
-                    response.bodyHandler(buffer -> {
-                        logger.info("Webhook sent!");
-                        future.complete(null);
+        client.request(requestOpts)
+                .onFailure(throwable -> handleFailure(future, client, throwable))
+                .onSuccess(httpClientRequest -> {
 
-                        // Close client
-                        client.close();
-                    });
-                } else {
-                    logger.error("Unable to send request to webhook at {} / status {} and message {}", configuration.getUrl(),
-                            response.statusCode(), response.statusMessage());
-                    future.completeExceptionally(new NotifierException("Unable to send request to '" +
-                            configuration.getUrl() + "'. Status code: " + response.statusCode() + ". Message: " +
-                            response.statusMessage(), null));
+                    try {
+                        // Connection is made, lets continue.
+                        final Future<HttpClientResponse> futureResponse;
 
-                    // Close client
-                    client.close();
-                }
-            });
+                        if (configuration.getHeaders() != null) {
+                            configuration.getHeaders().forEach(header -> httpClientRequest.putHeader(header.getName(), header.getValue()));
+                        }
 
-            request.exceptionHandler(throwable -> {
-                try {
-                    logger.error("Unable to send request to webhook at " + configuration.getUrl() + " cause " + throwable.getMessage());
-                    future.completeExceptionally(new NotifierException("Unable to send request to '" +
-                            configuration.getUrl(), throwable));
+                        if (configuration.getBody() != null && !configuration.getBody().isEmpty()) {
 
-                    // Close client
-                    client.close();
-                } catch (IllegalStateException ise) {
-                    // Do not take care about exception when closing client
-                }
-            });
+                            String body = templatize(configuration.getBody(), parameters);
+                            httpClientRequest.headers().remove(HttpHeaders.TRANSFER_ENCODING);
+                            httpClientRequest.headers().remove(HttpHeaders.CONTENT_LENGTH);
+                            futureResponse = httpClientRequest.send(Buffer.buffer(body));
+                        } else {
+                            futureResponse = httpClientRequest.send();
+                        }
 
-            if (configuration.getHeaders() != null) {
-                configuration.getHeaders().forEach(header -> request.putHeader(header.getName(), header.getValue()));
-            }
-
-            if (configuration.getBody() != null && !configuration.getBody().isEmpty()) {
-                String body = templatize(configuration.getBody(), parameters);
-                request.headers().remove(HttpHeaders.TRANSFER_ENCODING);
-                request.headers().remove(HttpHeaders.CONTENT_LENGTH);
-                request.end(Buffer.buffer(body));
-            } else {
-                request.end();
-            }
-        } catch (Exception ex) {
-            logger.error("Unable to send request to webhook at " + configuration.getUrl() + " cause " + ex.getMessage());
-            future.completeExceptionally(ex);
-        }
+                        futureResponse
+                                .onSuccess(httpResponse -> handleSuccess(future, client, httpResponse))
+                                .onFailure(throwable -> handleFailure(future, client, throwable));
+                    } catch (Exception e) {
+                        handleFailure(future, client, e);
+                    }
+                });
 
         return future;
+    }
+
+    private void handleSuccess(CompletableFuture<Void> future, HttpClient client, HttpClientResponse httpResponse) {
+        if (httpResponse.statusCode() == HttpStatusCode.OK_200) {
+            httpResponse.bodyHandler(buffer -> {
+                logger.info("Webhook sent!");
+                future.complete(null);
+
+                // Close client
+                client.close();
+            });
+        } else {
+            logger.error("Unable to send request to webhook at {} / status {} and message {}", configuration.getUrl(),
+                    httpResponse.statusCode(), httpResponse.statusMessage());
+            future.completeExceptionally(new NotifierException("Unable to send request to '" +
+                    configuration.getUrl() + "'. Status code: " + httpResponse.statusCode() + ". Message: " +
+                    httpResponse.statusMessage(), null));
+
+            // Close client
+            client.close();
+        }
+    }
+
+    private void handleFailure(CompletableFuture<Void> future, HttpClient client, Throwable throwable) {
+        try {
+            logger.error("Unable to send request to webhook at " + configuration.getUrl() + " cause " + throwable.getMessage());
+            future.completeExceptionally(new NotifierException("Unable to send request to '" +
+                    configuration.getUrl(), throwable));
+
+            // Close client
+            client.close();
+        } catch (IllegalStateException ise) {
+            // Do not take care about exception when closing client
+        }
     }
 
     private HttpMethod convert(io.gravitee.common.http.HttpMethod httpMethod) {
@@ -192,7 +205,7 @@ public class WebhookNotifier extends AbstractConfigurableNotifier<WebhookNotifie
             case TRACE:
                 return HttpMethod.TRACE;
             case OTHER:
-                return HttpMethod.OTHER;
+                return HttpMethod.valueOf("OTHER");
         }
 
         return null;
