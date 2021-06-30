@@ -29,14 +29,14 @@
 
     <groupId>io.gravitee.notifier</groupId>
     <artifactId>gravitee-notifier-webhook</artifactId>
-    <version>1.1.0-SNAPSHOT</version>
+    <version>1.1.0</version>
 
     <name>GraviteeSource - Notifier - Webhook</name>
 
     <properties>
         <gravitee-bom.version>1.0</gravitee-bom.version>
         <gravitee-plugin-api.version>1.10.0</gravitee-plugin-api.version>
-        <gravitee-node-api.version>1.6.0</gravitee-node-api.version>
+        <gravitee-node-api.version>1.6.6</gravitee-node-api.version>
         <gravitee-notifier-api.version>1.2.1</gravitee-notifier-api.version>
         <maven-assembly-plugin.version>2.5.5</maven-assembly-plugin.version>
 
