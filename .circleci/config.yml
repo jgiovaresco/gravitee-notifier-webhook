@@ -31,7 +31,7 @@ parameters:
     description: "What is the version number of the release you want to replay? (Mandatory, only for the 'standalone_release_replay' Workflow / see 'gio_action' pipeline parameter)"
 orbs:
   slack: circleci/slack@4.2.1
-  gravitee: gravitee-io/gravitee@1.0
+  gravitee: gravitee-io/gravitee@dev:1.0.28
   secrethub: secrethub/cli@1.1.0
 
 workflows:
@@ -163,7 +163,7 @@ workflows:
           # container_gun_image_name: 'openjdk'
           # container_gun_image_tag: '11.0.3-jdk-stretch'
           container_size: 'large'
-      - gravitee/d_notifier_package_bundle:
+      - gravitee/d_webhook_package_bundle:
           requires:
             - maven_n_git_release
           dry_run: false
@@ -188,7 +188,7 @@ workflows:
           # container_gun_image_name: 'openjdk'
           # container_gun_image_tag: '11.0.3-jdk-stretch'
           container_size: 'large'
-      - gravitee/d_notifier_package_bundle:
+      - gravitee/d_webhook_package_bundle:
           requires:
             - maven_n_git_release
           dry_run: true
@@ -267,7 +267,7 @@ workflows:
           # container_gun_image_name: 'openjdk'
           # container_gun_image_tag: '11.0.3-jdk-stretch'
           container_size: 'large'
-      - gravitee/d_notifier_package_bundle:
+      - gravitee/d_webhook_package_bundle:
           requires:
             - maven_n_git_release
           dry_run: false
@@ -293,7 +293,7 @@ workflows:
           # container_gun_image_name: 'openjdk'
           # container_gun_image_tag: '11.0.3-jdk-stretch'
           container_size: 'large'
-      - gravitee/d_notifier_package_bundle:
+      - gravitee/d_webhook_package_bundle:
           requires:
             - maven_n_git_release
           dry_run: true
