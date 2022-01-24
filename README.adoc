@@ -5,7 +5,6 @@ image:https://img.shields.io/static/v1?label=Available%20at&message=Gravitee.io&
 image:https://img.shields.io/badge/License-Apache%202.0-blue.svg["License", link="https://github.com/gravitee-io/gravitee-notifier-webhook/blob/master/LICENSE.txt"]
 image:https://img.shields.io/badge/semantic--release-conventional%20commits-e10079?logo=semantic-release["Releases", link="https://github.com/gravitee-io/gravitee-notifier-webhook/releases"]
 image:https://circleci.com/gh/gravitee-io/gravitee-notifier-webhook.svg?style=svg["CircleCI", link="https://circleci.com/gh/gravitee-io/gravitee-notifier-webhook"]
-image:https://ci.gravitee.io/buildStatus/icon?job=gravitee-io/gravitee-notifier-webhook/master["Build status", link="https://ci.gravitee.io/job/gravitee-io/job/gravitee-notifier-webhook"]
 image:https://f.hubspotusercontent40.net/hubfs/7600448/gravitee-github-button.jpg["Join the community forum", link="https://community.gravitee.io?utm_source=readme", height=20]
 endif::[]
 
