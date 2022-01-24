@@ -17,7 +17,6 @@ package io.gravitee.notifier.webhook.configuration;
 
 import io.gravitee.common.http.HttpMethod;
 import io.gravitee.notifier.api.NotifierConfiguration;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;

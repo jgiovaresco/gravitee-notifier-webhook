@@ -26,11 +26,10 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.*;
 import io.vertx.core.net.ProxyOptions;
 import io.vertx.core.net.ProxyType;
-import org.springframework.beans.factory.annotation.Value;
-
 import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import org.springframework.beans.factory.annotation.Value;
 
 /**
  * @author David BRASSELY (david.brassely at graviteesource.com)
@@ -44,24 +43,31 @@ public class WebhookNotifier extends AbstractConfigurableNotifier<WebhookNotifie
 
     @Value("${httpClient.timeout:10000}")
     private int httpClientTimeout;
+
     @Value("${httpClient.proxy.type:HTTP}")
     private String httpClientProxyType;
 
     @Value("${httpClient.proxy.http.host:#{systemProperties['http.proxyHost'] ?: 'localhost'}}")
     private String httpClientProxyHttpHost;
+
     @Value("${httpClient.proxy.http.port:#{systemProperties['http.proxyPort'] ?: 3128}}")
     private int httpClientProxyHttpPort;
+
     @Value("${httpClient.proxy.http.username:#{null}}")
     private String httpClientProxyHttpUsername;
+
     @Value("${httpClient.proxy.http.password:#{null}}")
     private String httpClientProxyHttpPassword;
 
     @Value("${httpClient.proxy.https.host:#{systemProperties['https.proxyHost'] ?: 'localhost'}}")
     private String httpClientProxyHttpsHost;
+
     @Value("${httpClient.proxy.https.port:#{systemProperties['https.proxyPort'] ?: 3128}}")
     private int httpClientProxyHttpsPort;
+
     @Value("${httpClient.proxy.https.username:#{null}}")
     private String httpClientProxyHttpsUsername;
+
     @Value("${httpClient.proxy.https.password:#{null}}")
     private String httpClientProxyHttpsPassword;
 
@@ -78,15 +84,10 @@ public class WebhookNotifier extends AbstractConfigurableNotifier<WebhookNotifie
         HttpClientOptions options = new HttpClientOptions();
 
         if (HTTPS_SCHEME.equalsIgnoreCase(target.getScheme())) {
-            options.setSsl(true)
-                    .setTrustAll(true)
-                    .setVerifyHost(false);
+            options.setSsl(true).setTrustAll(true).setVerifyHost(false);
         }
 
-        options.setMaxPoolSize(1)
-                .setKeepAlive(false)
-                .setTcpKeepAlive(false)
-                .setConnectTimeout(httpClientTimeout);
+        options.setMaxPoolSize(1).setKeepAlive(false).setTcpKeepAlive(false).setConnectTimeout(httpClientTimeout);
 
         if (configuration.isUseSystemProxy()) {
             ProxyOptions proxyOptions = new ProxyOptions();
@@ -105,47 +106,45 @@ public class WebhookNotifier extends AbstractConfigurableNotifier<WebhookNotifie
             options.setProxyOptions(proxyOptions);
         }
 
-        options.setDefaultPort(target.getPort() != -1 ? target.getPort() :
-                (HTTPS_SCHEME.equals(target.getScheme()) ? 443 : 80));
+        options.setDefaultPort(target.getPort() != -1 ? target.getPort() : (HTTPS_SCHEME.equals(target.getScheme()) ? 443 : 80));
         options.setDefaultHost(target.getHost());
 
         HttpClient client = Vertx.currentContext().owner().createHttpClient(options);
 
         RequestOptions requestOpts = new RequestOptions()
-                .setURI(target.getPath())
-                .setMethod(convert(configuration.getMethod()))
-                .setFollowRedirects(true)
-                .setTimeout(httpClientTimeout);
+            .setURI(target.getPath())
+            .setMethod(convert(configuration.getMethod()))
+            .setFollowRedirects(true)
+            .setTimeout(httpClientTimeout);
 
-        client.request(requestOpts)
-                .onFailure(throwable -> handleFailure(future, client, throwable))
-                .onSuccess(httpClientRequest -> {
+        client
+            .request(requestOpts)
+            .onFailure(throwable -> handleFailure(future, client, throwable))
+            .onSuccess(httpClientRequest -> {
+                try {
+                    // Connection is made, lets continue.
+                    final Future<HttpClientResponse> futureResponse;
 
-                    try {
-                        // Connection is made, lets continue.
-                        final Future<HttpClientResponse> futureResponse;
-
-                        if (configuration.getHeaders() != null) {
-                            configuration.getHeaders().forEach(header -> httpClientRequest.putHeader(header.getName(), header.getValue()));
-                        }
-
-                        if (configuration.getBody() != null && !configuration.getBody().isEmpty()) {
-
-                            String body = templatize(configuration.getBody(), parameters);
-                            httpClientRequest.headers().remove(HttpHeaders.TRANSFER_ENCODING);
-                            httpClientRequest.headers().remove(HttpHeaders.CONTENT_LENGTH);
-                            futureResponse = httpClientRequest.send(Buffer.buffer(body));
-                        } else {
-                            futureResponse = httpClientRequest.send();
-                        }
-
-                        futureResponse
-                                .onSuccess(httpResponse -> handleSuccess(future, client, httpResponse))
-                                .onFailure(throwable -> handleFailure(future, client, throwable));
-                    } catch (Exception e) {
-                        handleFailure(future, client, e);
+                    if (configuration.getHeaders() != null) {
+                        configuration.getHeaders().forEach(header -> httpClientRequest.putHeader(header.getName(), header.getValue()));
                     }
-                });
+
+                    if (configuration.getBody() != null && !configuration.getBody().isEmpty()) {
+                        String body = templatize(configuration.getBody(), parameters);
+                        httpClientRequest.headers().remove(HttpHeaders.TRANSFER_ENCODING);
+                        httpClientRequest.headers().remove(HttpHeaders.CONTENT_LENGTH);
+                        futureResponse = httpClientRequest.send(Buffer.buffer(body));
+                    } else {
+                        futureResponse = httpClientRequest.send();
+                    }
+
+                    futureResponse
+                        .onSuccess(httpResponse -> handleSuccess(future, client, httpResponse))
+                        .onFailure(throwable -> handleFailure(future, client, throwable));
+                } catch (Exception e) {
+                    handleFailure(future, client, e);
+                }
+            });
 
         return future;
     }
@@ -160,11 +159,23 @@ public class WebhookNotifier extends AbstractConfigurableNotifier<WebhookNotifie
                 client.close();
             });
         } else {
-            logger.error("Unable to send request to webhook at {} / status {} and message {}", configuration.getUrl(),
-                    httpResponse.statusCode(), httpResponse.statusMessage());
-            future.completeExceptionally(new NotifierException("Unable to send request to '" +
-                    configuration.getUrl() + "'. Status code: " + httpResponse.statusCode() + ". Message: " +
-                    httpResponse.statusMessage(), null));
+            logger.error(
+                "Unable to send request to webhook at {} / status {} and message {}",
+                configuration.getUrl(),
+                httpResponse.statusCode(),
+                httpResponse.statusMessage()
+            );
+            future.completeExceptionally(
+                new NotifierException(
+                    "Unable to send request to '" +
+                    configuration.getUrl() +
+                    "'. Status code: " +
+                    httpResponse.statusCode() +
+                    ". Message: " +
+                    httpResponse.statusMessage(),
+                    null
+                )
+            );
 
             // Close client
             client.close();
@@ -174,8 +185,7 @@ public class WebhookNotifier extends AbstractConfigurableNotifier<WebhookNotifie
     private void handleFailure(CompletableFuture<Void> future, HttpClient client, Throwable throwable) {
         try {
             logger.error("Unable to send request to webhook at " + configuration.getUrl() + " cause " + throwable.getMessage());
-            future.completeExceptionally(new NotifierException("Unable to send request to '" +
-                    configuration.getUrl(), throwable));
+            future.completeExceptionally(new NotifierException("Unable to send request to '" + configuration.getUrl(), throwable));
 
             // Close client
             client.close();
